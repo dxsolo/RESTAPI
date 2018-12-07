@@ -4,8 +4,11 @@ from flask_jwt_extended import (
 	create_access_token, 
 	create_refresh_token,
 	jwt_refresh_token_required,
-	get_jwt_identity
+	get_jwt_identity,
+	jwt_required,
+	get_raw_jwt
 )
+from blacklist import BLACKLIST
 from models.user import UserModel
 
 _user_parser = reqparse.RequestParser()
@@ -70,9 +73,19 @@ class UserLogin(Resource):
 		# create refresh token
 		# return them
 
+class UserLogout(Resource):
+	@jwt_required
+	def post(self):
+		jti = get_raw_jwt()['jti'] #jti is jwt id , a unique identifier for a JWT
+		BLACKLIST.add(jti)
+		return {'message':'Successfully logged out'}, 200
+
+
 class TokenRefresh(Resource):
 	@jwt_refresh_token_required
 	def post(self):
 		current_user = get_jwt_identity()
 		new_token = create_access_token(identity=current_user, fresh=False)
 		return {'access_token': new_token}, 200
+
+
